@@ -1,0 +1,55 @@
+name: Deploy canonical site to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone canonical site and local actions
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/LegoX/swe-lego.github.io.git site
+          git clone --depth 1 --branch v7.0.1 https://github.com/actions/upload-artifact.git .actions/upload-artifact
+          git clone --depth 1 --branch v5.0.0 https://github.com/actions/deploy-pages.git .actions/deploy-pages
+
+      - name: Prepare Pages artifact
+        shell: bash
+        run: |
+          tar \
+            --dereference --hard-dereference \
+            --directory site \
+            -cvf "$RUNNER_TEMP/artifact.tar" \
+            --exclude=.git \
+            --exclude=.github \
+            .
+
+      - name: Upload Pages artifact
+        id: upload
+        uses: ./.actions/upload-artifact
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: ./.actions/deploy-pages
+        with:
+          artifact_name: github-pages
