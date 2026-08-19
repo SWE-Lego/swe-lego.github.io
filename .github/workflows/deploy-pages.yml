@@ -28,6 +28,19 @@ jobs:
           git clone --depth 1 --branch v7.0.1 https://github.com/actions/upload-artifact.git .actions/upload-artifact
           git clone --depth 1 --branch v5.0.0 https://github.com/actions/deploy-pages.git .actions/deploy-pages
 
+      # The SWE-Review paper (arXiv:2607.06065) hardcodes
+      # https://swe-lego.github.io/SWE-Review as its project page URL. Since the
+      # published PDF cannot be changed, serve the SWE-Review site from that path
+      # here. Source of truth stays in LegoX/SWE-Review (gh-pages branch); all of
+      # its asset paths are relative, so it works unchanged under a subpath.
+      - name: Add SWE-Review project page at /SWE-Review
+        shell: bash
+        run: |
+          git clone --depth 1 --branch gh-pages \
+            https://github.com/LegoX/SWE-Review.git site/SWE-Review
+          rm -rf site/SWE-Review/.git
+          test -f site/SWE-Review/index.html
+
       - name: Prepare Pages artifact
         shell: bash
         run: |
